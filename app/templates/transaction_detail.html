@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Transaction {{ txn.transaction_id }} - AnomalyShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-search me-2" style="color: var(--accent-blue);"></i>Transaction Detail</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('main.results', dataset_id=dataset.id) }}">&larr; Back to Results</a>
+        &nbsp;|&nbsp;
+        <a href="{{ url_for('main.dashboard', dataset_id=dataset.id) }}">Dashboard</a>
+    </p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="mb-0">Transaction Information</h5>
+                    {% if txn.is_anomaly %}
+                    <span class="badge-anomaly"><i class="fas fa-flag me-1"></i> Anomaly</span>
+                    {% else %}
+                    <span class="badge-normal">Normal</span>
+                    {% endif %}
+                </div>
+
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted" style="width:40%">Transaction ID</td>
+                        <td><code>{{ txn.transaction_id }}</code></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Amount</td>
+                        <td class="fw-bold" style="font-size: 1.25rem; color: var(--accent-red) if txn.is_anomaly else var(--accent-green);">
+                            ${{ "{:,.2f}".format(txn.amount) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Timestamp</td>
+                        <td>{{ txn.timestamp.strftime('%B %d, %Y at %H:%M:%S') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Merchant Category</td>
+                        <td>{{ txn.merchant_category }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Location</td>
+                        <td>{{ txn.location }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">User ID</td>
+                        <td>{{ txn.user_id }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Anomaly Score</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="score-bar" style="width: 150px;">
+                                    <div class="score-bar-fill" style="width: {{ (txn.anomaly_score * 100)|int }}%; background: {{ '#ef5350' if txn.anomaly_score > 0.6 else '#ffa726' if txn.anomaly_score > 0.3 else '#66bb6a' }};"></div>
+                                </div>
+                                <strong>{{ "%.4f"|format(txn.anomaly_score) }}</strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">Score Interpretation</h5>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Anomaly Score</small>
+                        <small>{{ "%.1f"|format(txn.anomaly_score * 100) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 20px; background: var(--border-color);">
+                        <div class="progress-bar {{ 'bg-danger' if txn.anomaly_score > 0.6 else 'bg-warning' if txn.anomaly_score > 0.3 else 'bg-success' }}"
+                             style="width: {{ (txn.anomaly_score * 100)|int }}%;">
+                            {{ "%.1f"|format(txn.anomaly_score * 100) }}%
+                        </div>
+                    </div>
+                </div>
+
+                {% if txn.anomaly_score > 0.7 %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    <strong>High Risk:</strong> This transaction has a very high anomaly score and is likely fraudulent.
+                </div>
+                {% elif txn.anomaly_score > 0.4 %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>Medium Risk:</strong> This transaction shows unusual patterns. Manual review recommended.
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <strong>Low Risk:</strong> This transaction appears normal based on the analysis.
+                </div>
+                {% endif %}
+
+                <h6 class="mt-4 mb-2">Detection Method</h6>
+                <p class="text-muted small">{{ dataset.detection_method | replace('_', ' ') | title }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if related %}
+<div class="mt-3">
+    <h5><i class="fas fa-users me-2" style="color: var(--accent-purple);"></i>Related Transactions (Same User)</h5>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Amount</th>
+                        <th>Timestamp</th>
+                        <th>Category</th>
+                        <th>Location</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in related %}
+                    <tr>
+                        <td><code>{{ t.transaction_id }}</code></td>
+                        <td>${{ "{:,.2f}".format(t.amount) }}</td>
+                        <td class="text-muted small">{{ t.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ t.merchant_category }}</td>
+                        <td>{{ t.location }}</td>
+                        <td>{{ "%.3f"|format(t.anomaly_score) }}</td>
+                        <td>
+                            {% if t.is_anomaly %}
+                            <span class="badge-anomaly">Anomaly</span>
+                            {% else %}
+                            <span class="badge-normal">Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

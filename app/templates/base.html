@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Anomaly Detector{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #222240;
+            --accent-blue: #4fc3f7;
+            --accent-purple: #b388ff;
+            --accent-red: #ef5350;
+            --accent-green: #66bb6a;
+            --text-primary: #e8e8f0;
+            --text-muted: #8888a0;
+            --border-color: #2a2a4a;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .navbar-brand i {
+            color: var(--accent-blue);
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+        .stat-blue .stat-value { color: var(--accent-blue); }
+        .stat-red .stat-value { color: var(--accent-red); }
+        .stat-green .stat-value { color: var(--accent-green); }
+        .stat-purple .stat-value { color: var(--accent-purple); }
+        .btn-primary {
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border: none;
+            color: #000;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #29b6f6, #039be5);
+            color: #000;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef5350, #e53935);
+            border: none;
+            font-weight: 600;
+        }
+        .table {
+            --bs-table-bg: transparent;
+            color: var(--text-primary);
+        }
+        .table thead th {
+            border-color: var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table tbody td {
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+        .table tbody tr:hover {
+            background-color: var(--bg-card-hover);
+        }
+        .badge-anomaly {
+            background: rgba(239, 83, 80, 0.2);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 83, 80, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-normal {
+            background: rgba(102, 187, 106, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(102, 187, 106, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            transition: border-color 0.3s, background 0.3s;
+            cursor: pointer;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(79, 195, 247, 0.05);
+        }
+        .upload-zone i {
+            font-size: 3rem;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+        }
+        .progress-bar-anomaly {
+            background: linear-gradient(90deg, var(--accent-red), #ff8a80);
+        }
+        .score-bar {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            min-width: 80px;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        footer {
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .page-header {
+            padding: 2rem 0 1rem;
+        }
+        .page-header h1 {
+            font-weight: 700;
+            font-size: 1.75rem;
+        }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { color: #81d4fa; }
+        .form-select, .form-control {
+            background-color: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-select:focus, .form-control:focus {
+            background-color: var(--bg-card);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(79, 195, 247, 0.15);
+        }
+        .alert { border-radius: 10px; border: none; }
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg mb-0">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <i class="fas fa-shield-halved me-2"></i>AnomalyShield
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navContent">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.index') }}">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.upload') }}">
+                            <i class="fas fa-cloud-upload-alt me-1"></i> Upload
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="py-4 mt-4">
+        <div class="container text-center">
+            <span>AnomalyShield &mdash; Transaction Fraud Detection &copy; 2026</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

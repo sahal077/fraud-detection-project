@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ dataset.filename }} - AnomalyShield{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1><i class="fas fa-chart-bar me-2" style="color: var(--accent-blue);"></i>Analysis Dashboard</h1>
+        <p class="text-muted mb-0">
+            <i class="fas fa-file-csv me-1"></i> {{ dataset.filename }}
+            &mdash; Method: <span class="badge bg-secondary">{{ dataset.detection_method }}</span>
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('main.results', dataset_id=dataset.id) }}" class="btn btn-outline-light me-2">
+            <i class="fas fa-table me-1"></i> View All
+        </a>
+        <a href="{{ url_for('main.export', dataset_id=dataset.id) }}" class="btn btn-primary" id="exportBtn">
+            <i class="fas fa-download me-1"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-3">
+        <div class="card stat-card stat-blue">
+            <div class="stat-value">{{ "{:,}".format(stats.total_transactions) }}</div>
+            <div class="stat-label">Total Transactions</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-red">
+            <div class="stat-value">{{ "{:,}".format(stats.anomaly_count) }}</div>
+            <div class="stat-label">Anomalies Detected</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-purple">
+            <div class="stat-value">{{ stats.anomaly_pct }}%</div>
+            <div class="stat-label">Anomaly Rate</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-green">
+            <div class="stat-value">${{ "{:,.0f}".format(stats.total_amount) }}</div>
+            <div class="stat-label">Total Amount</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="chart-container">
+            <div id="chartTime"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="chart-container">
+            <div id="chartDist"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-container">
+            <div id="chartScore"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="chart-container">
+            <div id="chartCat"></div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4><i class="fas fa-exclamation-triangle me-2" style="color: var(--accent-red);"></i>Top Flagged Transactions</h4>
+        <a href="{{ url_for('main.results', dataset_id=dataset.id, show='anomalies') }}" class="btn btn-outline-light btn-sm">
+            View All Anomalies <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Amount</th>
+                        <th>Category</th>
+                        <th>Location</th>
+                        <th>User</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in anomalies %}
+                    <tr>
+                        <td><code>{{ t.transaction_id }}</code></td>
+                        <td>${{ "{:,.2f}".format(t.amount) }}</td>
+                        <td>{{ t.merchant_category }}</td>
+                        <td>{{ t.location }}</td>
+                        <td>{{ t.user_id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="score-bar">
+                                    <div class="score-bar-fill" style="width: {{ (t.anomaly_score * 100)|int }}%; background: {{ '#ef5350' if t.anomaly_score > 0.6 else '#ffa726' if t.anomaly_score > 0.3 else '#66bb6a' }};"></div>
+                                </div>
+                                <small class="text-muted">{{ "%.3f"|format(t.anomaly_score) }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if t.is_anomaly %}
+                            <span class="badge-anomaly"><i class="fas fa-flag me-1"></i>Anomaly</span>
+                            {% else %}
+                            <span class="badge-normal">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('main.transaction_detail', txn_id=t.id) }}" class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-search"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+Plotly.newPlot('chartTime', {{ chart_time | safe }}.data, {{ chart_time | safe }}.layout, {responsive: true});
+Plotly.newPlot('chartDist', {{ chart_dist | safe }}.data, {{ chart_dist | safe }}.layout, {responsive: true});
+Plotly.newPlot('chartScore', {{ chart_score | safe }}.data, {{ chart_score | safe }}.layout, {responsive: true});
+Plotly.newPlot('chartCat', {{ chart_cat | safe }}.data, {{ chart_cat | safe }}.layout, {responsive: true});
+
+document.getElementById('exportBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    fetch(this.href)
+        .then(r => r.json())
+        .then(data => {
+            if (data.download) window.location.href = data.download;
+        });
+});
+</script>
+{% endblock %}

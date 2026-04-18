@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Results - {{ dataset.filename }} - AnomalyShield{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1><i class="fas fa-table me-2" style="color: var(--accent-blue);"></i>Transaction Results</h1>
+        <p class="text-muted mb-0">{{ dataset.filename }} &mdash; {{ dataset.total_transactions }} transactions</p>
+    </div>
+    <div>
+        <a href="{{ url_for('main.dashboard', dataset_id=dataset.id) }}" class="btn btn-outline-light me-2">
+            <i class="fas fa-chart-bar me-1"></i> Dashboard
+        </a>
+        <a href="{{ url_for('main.export', dataset_id=dataset.id) }}" class="btn btn-primary" id="exportBtn">
+            <i class="fas fa-download me-1"></i> Export
+        </a>
+    </div>
+</div>
+
+<div class="mt-3 mb-3">
+    <div class="btn-group">
+        <a href="{{ url_for('main.results', dataset_id=dataset.id, show='all') }}"
+           class="btn btn-sm {{ 'btn-primary' if show == 'all' else 'btn-outline-light' }}">
+            All Transactions
+        </a>
+        <a href="{{ url_for('main.results', dataset_id=dataset.id, show='anomalies') }}"
+           class="btn btn-sm {{ 'btn-danger' if show == 'anomalies' else 'btn-outline-light' }}">
+            <i class="fas fa-flag me-1"></i> Anomalies Only
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Amount</th>
+                    <th>Timestamp</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>User</th>
+                    <th>Anomaly Score</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td><code>{{ t.transaction_id }}</code></td>
+                    <td>${{ "{:,.2f}".format(t.amount) }}</td>
+                    <td class="text-muted small">{{ t.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ t.merchant_category }}</td>
+                    <td>{{ t.location }}</td>
+                    <td>{{ t.user_id }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="score-bar">
+                                <div class="score-bar-fill" style="width: {{ (t.anomaly_score * 100)|int }}%; background: {{ '#ef5350' if t.anomaly_score > 0.6 else '#ffa726' if t.anomaly_score > 0.3 else '#66bb6a' }};"></div>
+                            </div>
+                            <small class="text-muted">{{ "%.3f"|format(t.anomaly_score) }}</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if t.is_anomaly %}
+                        <span class="badge-anomaly"><i class="fas fa-flag me-1"></i>Anomaly</span>
+                        {% else %}
+                        <span class="badge-normal">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('main.transaction_detail', txn_id=t.id) }}" class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-search"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-4 d-flex justify-content-center">
+    <ul class="pagination">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('main.results', dataset_id=dataset.id, page=pagination.prev_num, show=show) }}">&laquo;</a>
+        </li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('main.results', dataset_id=dataset.id, page=p, show=show) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('main.results', dataset_id=dataset.id, page=pagination.next_num, show=show) }}">&raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('exportBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    fetch(this.href)
+        .then(r => r.json())
+        .then(data => {
+            if (data.download) window.location.href = data.download;
+        });
+});
+</script>
+{% endblock %}

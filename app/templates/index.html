@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}AnomalyShield - Home{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-shield-halved me-2" style="color: var(--accent-blue);"></i>AnomalyShield</h1>
+    <p class="text-muted mb-0">Detect fraudulent transactions with machine learning</p>
+</div>
+
+<div class="row g-4 mt-3">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: var(--accent-blue);"></i>
+                <h5>Upload Data</h5>
+                <p class="text-muted">Upload CSV or Excel files with transaction records</p>
+                <a href="{{ url_for('main.upload') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-upload me-1"></i> Upload File
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <i class="fas fa-brain fa-3x mb-3" style="color: var(--accent-purple);"></i>
+                <h5>ML Detection</h5>
+                <p class="text-muted">Isolation Forest, One-Class SVM, Z-Score, IQR methods</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <i class="fas fa-chart-line fa-3x mb-3" style="color: var(--accent-green);"></i>
+                <h5>Visualize</h5>
+                <p class="text-muted">Interactive dashboards with anomaly scores and patterns</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if datasets %}
+<div class="mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Analyses</h4>
+        <form method="POST" action="{{ url_for('main.delete_all') }}" onsubmit="return confirm('Clear all stored analyses? This cannot be undone.');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-trash-alt me-1"></i> Clear All
+            </button>
+        </form>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Method</th>
+                        <th>Transactions</th>
+                        <th>Anomalies</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ds in datasets %}
+                    <tr>
+                        <td><i class="fas fa-file-csv me-1" style="color: var(--accent-blue);"></i> {{ ds.filename }}</td>
+                        <td><span class="badge bg-secondary">{{ ds.detection_method }}</span></td>
+                        <td>{{ ds.total_transactions }}</td>
+                        <td>
+                            <span class="badge-anomaly">
+                                <i class="fas fa-exclamation-triangle me-1"></i>{{ ds.anomaly_count }}
+                            </span>
+                        </td>
+                        <td class="text-muted">{{ ds.uploaded_at.strftime('%b %d, %Y %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('main.dashboard', dataset_id=ds.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-chart-bar me-1"></i> Dashboard
+                            </a>
+                            <a href="{{ url_for('main.results', dataset_id=ds.id) }}" class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-table me-1"></i> Results
+                            </a>
+                            <form method="POST" action="{{ url_for('main.delete_dataset', dataset_id=ds.id) }}" class="d-inline" onsubmit="return confirm('Delete this analysis?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
